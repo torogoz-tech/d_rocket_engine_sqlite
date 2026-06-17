@@ -1,0 +1,3 @@
+dependency_overrides:
+  d_rocket:
+    path: ../d_rocket

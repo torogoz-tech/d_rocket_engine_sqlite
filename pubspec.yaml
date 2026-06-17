@@ -1,0 +1,54 @@
+name: d_rocket_engine_sqlite
+description: >
+  SQLite engine for the d_rocket 2.0 framework. Bundles
+  libsqlite3 and the SQLCipher probe; register it once
+  at app startup to enable the DbContext, DbSet, LINQ-SQL
+  Queryable, and auto-migrations stack. Without this
+  package (or another d_rocket_engine_* engine), the
+  ORM layer throws a clear "no engine registered" error
+  at Db.open time. Use this only if you need the
+  @Table / DbContext / auto-migrations stack; if you
+  only need serialization, REST, and LINQ, you do not
+  need this package — d_rocket itself stays light.
+version: 2.0.0
+
+repository: https://github.com/torogoz-tech/d_rocket_engine_sqlite
+homepage: https://github.com/torogoz-tech/d_rocket_engine_sqlite
+issue_tracker: https://github.com/torogoz-tech/d_rocket_engine_sqlite/issues
+documentation: https://github.com/torogoz-tech/d_rocket_engine_sqlite/blob/main/README.md
+
+topics:
+  - sqlite
+  - sqlcipher
+  - d-rocket
+  - orm
+  - database
+  - engine
+
+environment:
+  sdk: ^3.6.0
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  d_rocket: ^2.0.0
+  sqlite3: ^3.0.0
+  meta: ^1.17.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^6.0.0
+  test: ^1.30.0
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  windows:
+  # No `web:` — sqlite3 is a dart:ffi binding and
+  # does not compile to JS / WASM. Web support
+  # requires a separate d_rocket_engine_libsql_wasm
+  # engine.
