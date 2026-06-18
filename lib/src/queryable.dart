@@ -33,10 +33,15 @@ import 'dart:async';
 
 import 'package:d_rocket/d_rocket.dart';
 
-import 'sql/fragment.dart';
 import 'sql/query_provider.dart';
-import 'sql/translator.dart';
+import 'sql/sqlite_dialect.dart';
 // (no sqlite3 import — sqflite uses Map<String, Object?>)
+
+/// The single shared [SqliteDialect] instance
+/// used by every [SqlTranslator] in this
+/// engine. Const, so the engine has zero
+/// dialect-state per query.
+const SqlDialect _kDialect = SqliteDialect();
 
 /// A function that maps a `Row` to a user value of type [T].
 typedef ResultRowReader<T> = T Function(Map<String, Object?> row);
@@ -1352,7 +1357,8 @@ class Queryable<T> extends IQueryable<T> {
       // with the main alias. We re-parse the where via
       // a tiny adapter: pass the main alias as the
       // translator's table alias.
-      final SqlTranslator tx = SqlTranslator(tableAlias: mainAlias);
+      final SqlTranslator tx =
+          SqlTranslator(tableAlias: mainAlias, dialect: _kDialect);
       final SqlFragment whereFrag = tx.translateLambda(_where);
       from.write(' WHERE ${whereFrag.sql}');
       binds.addAll(whereFrag.binds);
@@ -1360,7 +1366,8 @@ class Queryable<T> extends IQueryable<T> {
 
     // ORDER BY.
     for (final _OrderByClause clause in _orderBy) {
-      final SqlTranslator tx = SqlTranslator(tableAlias: mainAlias);
+      final SqlTranslator tx =
+          SqlTranslator(tableAlias: mainAlias, dialect: _kDialect);
       final SqlFragment orderFrag = tx.translateLambda(clause.selector);
       from.write(
         ' ORDER BY ${orderFrag.sql}${clause.descending ? ' DESC' : ' ASC'}',
@@ -1819,7 +1826,7 @@ class Queryable<T> extends IQueryable<T> {
   // ─── Helpers ───────────────────────────────────────────────────────
 
   SqlFragment _translate(LambdaExpr lambda) {
-    return SqlTranslator().translateLambda(lambda);
+    return SqlTranslator(dialect: _kDialect).translateLambda(lambda);
   }
 
   LambdaExpr _requireLambda(String opName, Expr expr) {

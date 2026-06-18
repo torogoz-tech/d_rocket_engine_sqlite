@@ -54,7 +54,13 @@ export 'src/db_set_extension.dart';
 export 'src/queryable.dart';
 export 'src/sql/encryption_config.dart';
 export 'src/sql/encryption_status.dart';
-export 'src/sql/fragment.dart';
+//: `sql/fragment.dart` was the old location
+// of `SqlFragment`; in 2.0.0 the class lives in
+// d_rocket core (`src/linq/sql/sql_fragment.dart`)
+// and is re-exported by the d_rocket barrel.
+// The engine no longer re-exports it directly
+// to avoid duplicate definitions when the
+// engine is imported alongside d_rocket.
 export 'src/sql/key_provider.dart';
 export 'src/sql/query_provider.dart';
 //: `redact_pragma_key.dart` lives in d_rocket core
@@ -63,7 +69,15 @@ export 'src/sql/query_provider.dart';
 // already, so `redactPragmaKey` is reachable
 // through this barrel without a duplicate export.
 export 'src/sql/sqlcipher_probe.dart';
-export 'src/sql/translator.dart';
+//: `src/sql/translator.dart` is gone. The
+// `SqlTranslator` is in d_rocket core
+// (`src/linq/sql/sql_translator.dart`); the
+// `d_rocket` barrel re-exports it. The
+// engine provides the `SqliteDialect`
+// (a SQLite-flavoured `DefaultDialect`
+// subclass) that callers pass to
+// `SqlTranslator(dialect: ...)`.
+export 'src/sql/sqlite_dialect.dart';
 export 'src/sqlite_engine.dart';
 
 /// Top-level registration helper. Call once at
