@@ -438,16 +438,27 @@ void main() {
   // ───: reverse_ / toLookup_ / zip_ ───────────────
 
   group('Fase 9.7 — reverse_', () {
-    test('reverse_ emits rows in reverse rowid order', () async {
+    test('reverse_ emits rows in reverse of the prior orderBy_', () async {
+      // (Phase 1a.1): the 2.0.0 contract is
+      // that reverse_() requires a preceding
+      // orderBy_() (SQL has no "natural" row
+      // order). The 1.x version used
+      // ORDER BY rowid DESC which was
+      // SQLite-specific. The 2.0.0 contract
+      // is portable across engines.
       final q = Queryable<_User>(
         provider: provider,
         table: 'users',
         reader: _userReader,
         asyncProvider: provider,
-      ).reverse_();
+      ).orderBy_(Expr.lambda(
+        [Expr.param('u')],
+        Expr.member(Expr.param('u'), 'id'),
+      )).reverse_();
       final List<_User> users = await q.toListAsync_();
       // Insertion order: (30), Maria(25), (28), Jose(35).
-      // rowid order reversed: Jose(35), (28), Maria(25), (30).
+      // orderBy_(id) ASC + reverse_() = orderBy_(id) DESC.
+      // id order reversed: Jose(35), (28), Maria(25), (30).
       expect(users.map((_User u) => u.name).toList(), <String>[
         'Jose',
         'Abner',
