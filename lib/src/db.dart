@@ -161,6 +161,17 @@ class Db {
     Future<void> Function(Db db)? onCreate,
     List<EntityMeta> entityMetas = const <EntityMeta>[],
     bool autoMigrate = false,
+    //: [engine] (a [DbEngine]) is the
+    // explicit way to choose the engine.
+    // When provided, the [EngineRegistry]
+    // is bypassed entirely — you don't
+    // need to call dRocketSqlite() first.
+    // When null, the engine is looked up
+    // from the registry (the legacy path,
+    // still supported). For tests and
+    // multi-engine apps, prefer the
+    // explicit path.
+    DbEngine? engine,
   }) async {
     final String? resolvedPassword = await _resolveKey(
       password: password,
@@ -176,6 +187,7 @@ class Db {
       onCreate: onCreate,
       autoMigrate: autoMigrate,
       keyProvider: keyProvider,
+      engine: engine,
     );
     return db;
   }
@@ -192,6 +204,7 @@ class Db {
     Future<void> Function(Db db)? onCreate,
     List<EntityMeta> entityMetas = const <EntityMeta>[],
     bool autoMigrate = false,
+    DbEngine? engine,
   }) async {
     final String? resolvedPassword = await _resolveKey(
       password: password,
@@ -207,6 +220,7 @@ class Db {
       onCreate: onCreate,
       autoMigrate: autoMigrate,
       keyProvider: keyProvider,
+      engine: engine,
     );
     return db;
   }
@@ -236,19 +250,25 @@ class Db {
     MigrationStrategy? strategy,
     Future<void> Function(Db db)? onCreate,
     bool autoMigrate = false,
+    DbEngine? engine,
   }) async {
-    final DbEngine engine = EngineRegistry.findOrThrow;
-    if (engine.name != 'sqlite') {
+    //: prefer the explicit engine (the
+    // new path) over the registry (the
+    // legacy path). When the user passes
+    // `engine: const SqliteEngine()`,
+    // the registry is bypassed entirely.
+    final DbEngine resolved = engine ?? EngineRegistry.findOrThrow;
+    if (resolved.name != 'sqlite') {
       throw DatabaseException(
         'Db is the SQLite engine facade; the registered '
-        'engine is "${engine.name}". Use the engine-specific '
+        'engine is "${resolved.name}". Use the engine-specific '
         'facade (e.g. d_rocket_engine_postgres) for a '
         'different backend, or register the SQLite engine '
         'with dRocketSqlite() before calling Db.open.',
-        cause: engine.name,
+        cause: resolved.name,
       );
     }
-    final AsyncQueryProvider raw = await engine.open(
+    final AsyncQueryProvider raw = await resolved.open(
       path: path,
       password: password,
       encryptionConfig: encryptionConfig,
