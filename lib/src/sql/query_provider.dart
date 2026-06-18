@@ -71,7 +71,20 @@ Future<T> _wrapAsync<T>(Future<T> Function() op) async {
 
 /// Owns a `sqlite3.Database` and exposes the operations the
 /// queryable needs.
-class SqliteQueryProvider implements AsyncQueryProvider {
+///
+/// In 2.0.0, this class implements both
+/// [AsyncQueryProvider] (the canonical
+/// engine-agnostic contract) and
+/// [LegacySyncQueryProvider] (the 1.x-style
+/// sync API, engine-specific to SQLite).
+/// The dual implementation lets the same
+/// `SqliteQueryProvider` instance back both
+/// the new `toListAsync_` / `countAsync_`
+/// / … API (engine-agnostic) and the legacy
+/// `toList_` / `count_` / … API (SQLite
+/// only).
+class SqliteQueryProvider
+    implements AsyncQueryProvider, LegacySyncQueryProvider {
   final Database _db;
   bool _disposed = false;
 
@@ -218,6 +231,7 @@ class SqliteQueryProvider implements AsyncQueryProvider {
 
   /// Legacy sync API (pre-). Use [selectAsync] in
   /// new code.
+  @override
   List<Row> selectWithBinds(String sql, List<Object?> binds) {
     return _wrap(() {
       if (binds.isEmpty) return _db.select(sql);
