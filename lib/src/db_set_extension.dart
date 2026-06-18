@@ -15,7 +15,6 @@
 
 import 'package:d_rocket/d_rocket.dart';
 
-import 'queryable.dart';
 import 'sql/query_provider.dart';
 
 /// (the bridge): a `DbSet<T>.asQueryable`

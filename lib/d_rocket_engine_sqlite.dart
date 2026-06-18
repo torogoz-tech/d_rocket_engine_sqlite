@@ -51,7 +51,21 @@ export 'package:d_rocket/d_rocket.dart';
 export 'src/db.dart';
 export 'src/db_context_extension.dart';
 export 'src/db_set_extension.dart';
-export 'src/queryable.dart';
+//: `src/queryable.dart` is gone. The
+// `Queryable<T>` (with the LINQ surface
+// + the `SqliteGroupedQueryable` /
+// `SqliteJoinedQueryable` /
+// `SqliteSelectManyQueryable` /
+// `SqliteSetOpQueryable` subclasses) is
+// in d_rocket core
+// (`src/linq/queryable.dart`); the d_rocket
+// barrel re-exports it. The engine's
+// `SqliteQueryProvider` implements
+// `LegacySyncQueryProvider` (the shim in
+// d_rocket core), so the runtime behaviour
+// is unchanged: the sync LINQ methods
+// (`toList_`, `count_`, …) work for the
+// SQLite engine.
 export 'src/sql/encryption_config.dart';
 export 'src/sql/encryption_status.dart';
 //: `sql/fragment.dart` was the old location
