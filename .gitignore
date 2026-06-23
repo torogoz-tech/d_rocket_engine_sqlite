@@ -7,3 +7,6 @@ pubspec.lock
 .vscode/
 *.iml
 .DS_Store
+
+# Avoid committing SQLite in-memory db files (side-effect of some tests)
+sqlite::memory:
