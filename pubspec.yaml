@@ -45,3 +45,13 @@ platforms:
   # does not compile to JS / WASM. Web support
   # requires a separate d_rocket_engine_libsql_wasm
   # engine.
+
+executables:
+  # The runtime half of the d_rocket migration
+  # CLI: handles the subcommands that need a real
+  # SQLite engine (status / run / rollback). The
+  # scaffolder half (add / list / doctor) lives in
+  # the d_rocket core package as
+  # `d_rocket:migration`. See d_rocket/bin/migration.dart
+  # and doc/11-cli.md for the split rationale.
+  migration: migration
