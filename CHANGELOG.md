@@ -18,7 +18,7 @@ for the `libsqlite3` native binding.
 * **New package.** `d_rocket_engine_sqlite` is the
   SQLite implementation of d_rocket's `DbEngine`
   contract. Register it once at app startup with
-  `dRocketSqlite.register()` and the
+  `dRocketSqlite()` and the
   `Db` / `DbContext` / `DbSet` / SQL `Queryable` /
   auto-migrations stack lights up.
 

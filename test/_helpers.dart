@@ -3,7 +3,7 @@
 //
 // All tests that use `Db.open` / `Db.inMemory` /
 // `SqliteQueryProvider` must call
-// `dRocketSqlite.register()` once before their
+// `dRocketSqlite()` once before their
 // first database call. The `setUpSqlite` helper
 // is a thin wrapper around the test's
 // `setUp` that does that registration and

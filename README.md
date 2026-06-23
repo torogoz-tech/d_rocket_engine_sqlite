@@ -53,7 +53,7 @@ void main() async {
   `package:sqlite3`).
 - Implements d_rocket's `DbEngine` interface with
   the SQLite engine (`SqliteEngine`).
-- Provides `dRocketSqlite.register()` (the public
+- Provides `dRocketSqlite()` (the public
   API) which wires the engine into d_rocket's
   `EngineRegistry`.
 - Owns `SqliteQueryProvider` (the SQLite
@@ -177,8 +177,8 @@ message ("the underlying engine is not SQLCipher").
 | | |
 |---|---|
 | Latest release | 2.0.0 (paired with d_rocket 2.0.0) |
-| pana | TBD |
-| Tests | TBD |
+| pana | (scored by pub.dev on first publish) |
+| Tests | 283 across 27 files (1 skip when no SQLCipher) |
 | Lockstep | follows d_rocket 2.0.0 |
 
 ## License
