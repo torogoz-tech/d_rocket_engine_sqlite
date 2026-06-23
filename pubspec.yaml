@@ -1,15 +1,9 @@
 name: d_rocket_engine_sqlite
-description: >
-  SQLite engine for the d_rocket 2.0 framework. Bundles
-  libsqlite3 and the SQLCipher probe; register it once
-  at app startup to enable the DbContext, DbSet, LINQ-SQL
-  Queryable, and auto-migrations stack. Without this
-  package (or another d_rocket_engine_* engine), the
-  ORM layer throws a clear "no engine registered" error
-  at Db.open time. Use this only if you need the
-  @Table / DbContext / auto-migrations stack; if you
-  only need serialization, REST, and LINQ, you do not
-  need this package — d_rocket itself stays light.
+description: >-
+  SQLite engine for d_rocket 2.0: bundles libsqlite3 (and
+  the SQLCipher probe) to drive DbContext / DbSet / LINQ-SQL
+  push-down and auto-migrations on iOS, Android, macOS,
+  Linux, and Windows.
 version: 2.0.0
 
 repository: https://github.com/torogoz-tech/d_rocket_engine_sqlite
@@ -23,7 +17,6 @@ topics:
   - d-rocket
   - orm
   - database
-  - engine
 
 environment:
   sdk: ^3.6.0

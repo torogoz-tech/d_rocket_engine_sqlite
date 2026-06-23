@@ -73,6 +73,38 @@ void main() async {
   `EncryptionConfig` (kdf iterations, HMAC size,
   page size, kdf algorithm).
 
+## The 2.0.0 native binding strategy
+
+> **Important: this engine depends on
+> `package:sqlite3` (Simon Binder) as a transitive
+> dependency in 2.0.0.** The strategic plan is to
+> replace it with a hand-rolled FFI binding in
+> d_rocket 3.0.0 (target: 2027-Q4).
+
+This is a **known, accepted** trade-off. The full
+rationale is in
+[`doc/STRATEGIC_DECISION_NATIVE_BINDING.md`](../../doc/STRATEGIC_DECISION_NATIVE_BINDING.md).
+TL;DR:
+
+* For 2.0.0, `package:sqlite3` is the only viable
+  Dart SQLite binding with real adoption.
+* For 3.0.0, we are committing to writing our
+  own in-house FFI binding — faster, better
+  structured, more reliable, and decoupled from
+  drift's roadmap.
+
+**What this means for you today:**
+
+* You get a working SQLite engine on iOS, Android,
+  macOS, Windows, and Linux.
+* The native lib (`libsqlite3` / SQLCipher) is
+  loaded via `package:sqlite3`.
+* The API surface is stable; we won't break it
+  in 2.x.
+* In 3.0.0, the FFI binding will be replaced
+  transparently — same public API, no migration
+  required for end users.
+
 ## What's not in this package
 
 - **The ORM itself.** `DbContext`, `DbSet<T>`,
