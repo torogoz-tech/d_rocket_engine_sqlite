@@ -18,8 +18,9 @@ version number.
   `--diagnostics-file`.
 * `--migrations <dart_file>` support for loading application
   `List<MigrationBase> migrations` in a temporary project worker. `run` and
-  `rollback` now execute real transactional migration code instead of only
-  printing an MVP warning.
+  `rollback` now execute real transactional migration code. Without this
+  option, `run --target` reports the current state and explains how to load
+  the application's migration classes; it never pretends to apply a migration.
 
 The CLI remains a separate process from an attached Flutter VM Service. Import
 the generated NDJSON into the d_rocket DevTools extension when inspection in

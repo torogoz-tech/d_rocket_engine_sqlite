@@ -107,9 +107,9 @@ class _RawSqliteRunner {
       '(${target > from ? "upgrade" : "downgrade"})',
     );
     stdout.writeln(
-      '⚠️  This CLI MVP does NOT load your migration classes. '
-      'Use `Db.open(strategy: MigrationStrategy(...))` '
-      'programmatically to actually apply migrations.',
+      'No migration file was provided. Use --migrations <dart_file> '
+      'to apply application migration classes; this command only reports '
+      'the current database state when no file is supplied.',
     );
     return from == target ? 0 : 1;
   }
