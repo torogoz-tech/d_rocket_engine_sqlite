@@ -8,6 +8,19 @@ documented in this file. Versions follow
 `d_rocket_engine_sqlite` release with the same
 version number.
 
+## [2.1.0] — planned
+
+### Added
+
+* SQLite diagnostics with SQL operation classification, bind counts/types,
+  row counts, null-value coverage and captured database errors.
+* NDJSON diagnostics output for `status`, `run` and `rollback` through
+  `--diagnostics-file`.
+
+The CLI remains a separate process from an attached Flutter VM Service. Import
+the generated NDJSON into the d_rocket DevTools extension when inspection in
+the same timeline is needed.
+
 ## [2.0.0] — 2026-06-17
 
 Initial release. The SQLite engine is split out of

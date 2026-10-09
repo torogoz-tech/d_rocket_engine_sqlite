@@ -227,38 +227,96 @@ class SqliteQueryProvider
 
   /// Legacy sync API (pre-). Use [selectAsync] in
   /// new code.
-  List<Row> select(String sql) => _wrap(() => _db.select(sql));
+  List<Row> select(String sql) {
+    final DateTime started = DateTime.now();
+    try {
+      final List<Row> rows = _wrap(() => _db.select(sql));
+      _recordDatabaseEvent(
+        operation: _sqlOperation(sql),
+        sql: sql,
+        started: started,
+        rowCount: rows.length,
+      );
+      return rows;
+    } catch (error) {
+      _recordDatabaseEvent(
+        operation: _sqlOperation(sql),
+        sql: sql,
+        started: started,
+        error: error,
+      );
+      rethrow;
+    }
+  }
 
   /// Legacy sync API (pre-). Use [selectAsync] in
   /// new code.
   @override
   List<Row> selectWithBinds(String sql, List<Object?> binds) {
-    return _wrap(() {
-      if (binds.isEmpty) return _db.select(sql);
-      final stmt = _db.prepare(sql);
-      try {
-        return stmt.select(binds);
-      } finally {
-        stmt.close();
-      }
-    });
+    final DateTime started = DateTime.now();
+    try {
+      final List<Row> rows = _wrap(() {
+        if (binds.isEmpty) return _db.select(sql);
+        final stmt = _db.prepare(sql);
+        try {
+          return stmt.select(binds);
+        } finally {
+          stmt.close();
+        }
+      });
+      _recordDatabaseEvent(
+        operation: _sqlOperation(sql),
+        sql: sql,
+        binds: binds,
+        started: started,
+        rowCount: rows.length,
+      );
+      return rows;
+    } catch (error) {
+      _recordDatabaseEvent(
+        operation: 'select',
+        sql: sql,
+        binds: binds,
+        started: started,
+        error: error,
+      );
+      rethrow;
+    }
   }
 
   /// Legacy sync API (pre-). Use [executeAsync] in
   /// new code.
   void execute(String sql, [List<Object?>? binds]) {
-    _wrap(() {
-      if (binds == null || binds.isEmpty) {
-        _db.execute(sql);
-        return;
-      }
-      final stmt = _db.prepare(sql);
-      try {
-        stmt.execute(binds);
-      } finally {
-        stmt.close();
-      }
-    });
+    final DateTime started = DateTime.now();
+    try {
+      _wrap(() {
+        if (binds == null || binds.isEmpty) {
+          _db.execute(sql);
+          return;
+        }
+        final stmt = _db.prepare(sql);
+        try {
+          stmt.execute(binds);
+        } finally {
+          stmt.close();
+        }
+      });
+      _recordDatabaseEvent(
+        operation: _sqlOperation(sql),
+        sql: sql,
+        binds: binds,
+        started: started,
+      );
+    } catch (error) {
+      _recordDatabaseEvent(
+        operation: _sqlOperation(sql),
+        sql: sql,
+        binds: binds,
+        started: started,
+        error: error,
+      );
+      rethrow;
+    }
   }
 
   /// Legacy sync API (pre-). Use [disposeAsync] in
@@ -314,4 +372,68 @@ class SqliteQueryProvider
   /// the diagnostics snapshot.
   @override
   bool get isOpen => !_disposed;
+}
+
+void _recordDatabaseEvent({
+  required String operation,
+  required String sql,
+  required DateTime started,
+  List<Object?>? binds,
+  int? rowCount,
+  Object? error,
+}) {
+  final diagnostics = DrocketDiagnostics.instance;
+  diagnostics.record(
+    DiagnosticEvent(
+      category: diagnostics.isLinqContext
+          ? DiagnosticCategory.linq
+          : DiagnosticCategory.database,
+      operation: operation,
+      startedAt: started,
+      duration: DateTime.now().difference(started),
+      success: error == null,
+      error: error?.toString(),
+      metadata: <String, Object?>{
+        'sql': sql,
+        'sqlKind': _sqlOperation(sql),
+        if (binds != null) 'bindCount': binds.length,
+        if (binds != null)
+          'bindTypes': <String>[
+            for (final Object? bind in binds) _bindType(bind),
+          ],
+        if (diagnostics.includeSensitiveData && binds != null) 'binds': binds,
+        if (rowCount != null) 'rowCount': rowCount,
+      },
+    ),
+  );
+}
+
+String _sqlOperation(String sql) {
+  final String normalized = sql.trimLeft().toUpperCase();
+  if (normalized.startsWith('SELECT') || normalized.startsWith('WITH')) {
+    return 'select';
+  }
+  if (normalized.startsWith('INSERT')) return 'insert';
+  if (normalized.startsWith('UPDATE')) return 'update';
+  if (normalized.startsWith('DELETE')) return 'delete';
+  if (normalized.startsWith('CREATE') ||
+      normalized.startsWith('ALTER') ||
+      normalized.startsWith('DROP') ||
+      normalized.startsWith('RENAME') ||
+      normalized.startsWith('VACUUM') ||
+      normalized.startsWith('PRAGMA')) {
+    return 'ddl';
+  }
+  return 'execute';
+}
+
+String _bindType(Object? value) {
+  if (value == null) return 'null';
+  if (value is String) return 'string';
+  if (value is int) return 'int';
+  if (value is double) return 'double';
+  if (value is num) return 'number';
+  if (value is bool) return 'bool';
+  if (value is List<int>) return 'blob';
+  return value.runtimeType.toString();
 }
