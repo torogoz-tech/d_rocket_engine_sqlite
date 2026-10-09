@@ -8,7 +8,7 @@ documented in this file. Versions follow
 `d_rocket_engine_sqlite` release with the same
 version number.
 
-## [2.1.0] — planned
+## [2.1.0] — Unreleased
 
 ### Added
 
@@ -20,7 +20,14 @@ version number.
   `List<MigrationBase> migrations` in a temporary project worker. `run` and
   `rollback` now execute real transactional migration code. Without this
   option, `run --target` reports the current state and explains how to load
-  the application's migration classes; it never pretends to apply a migration.
+  the application's migration classes; it never pretends to apply a
+  migration.
+
+### Validation
+
+* Added SQLite integration coverage for table rebuilds, data preservation,
+  transactional rollback and CLI `run`/`status`/`rollback` smoke flows.
+* Added a deterministic sync throughput benchmark with idempotent retries.
 
 The CLI remains a separate process from an attached Flutter VM Service. Import
 the generated NDJSON into the d_rocket DevTools extension when inspection in
