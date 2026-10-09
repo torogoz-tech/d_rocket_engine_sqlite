@@ -30,13 +30,13 @@ Consumers opt in:
 ```yaml
 # pubspec.yaml
 dependencies:
-  d_rocket: ^2.0.0
+  d_rocket: ^2.1.0
 
   # Only add this if you use Db / DbContext / DbSet /
   # auto-migrations. Without it (or another
   # d_rocket_engine_* engine), Db.open throws a
   # clear "no engine registered" error.
-  d_rocket_engine_sqlite: ^2.0.0
+  d_rocket_engine_sqlite: ^2.1.0
 ```
 
 ```dart

@@ -32,6 +32,7 @@ library;
 import 'dart:io';
 
 import 'package:d_rocket_engine_sqlite/d_rocket_engine_sqlite.dart';
+import 'package:d_rocket_engine_sqlite/src/cli/migration_worker.dart';
 
 const String _kBanner = '''
 ┌─────────────────────────────────────────────┐
@@ -44,16 +45,19 @@ class _Flags {
     this.dbPath,
     this.target,
     this.diagnosticsFile,
+    this.migrationsFile,
   });
 
   final String? dbPath;
   final int? target;
   final String? diagnosticsFile;
+  final String? migrationsFile;
 
   static _Flags parse(List<String> args) {
     String? db;
     int? target;
     String? diagnosticsFile;
+    String? migrationsFile;
     for (var i = 0; i < args.length; i++) {
       final arg = args[i];
       if (arg == '--db' && i + 1 < args.length) {
@@ -62,12 +66,15 @@ class _Flags {
         target = int.tryParse(args[++i]);
       } else if (arg == '--diagnostics-file' && i + 1 < args.length) {
         diagnosticsFile = args[++i];
+      } else if (arg == '--migrations' && i + 1 < args.length) {
+        migrationsFile = args[++i];
       }
     }
     return _Flags(
       dbPath: db,
       target: target,
       diagnosticsFile: diagnosticsFile,
+      migrationsFile: migrationsFile,
     );
   }
 }
@@ -189,6 +196,9 @@ Future<int> _runMigrate(_Flags f) async {
     stderr.writeln('Error: --db <path> is required');
     return 2;
   }
+  if (f.migrationsFile != null) {
+    return _runMigrationWorker(f, 'run');
+  }
   final started = DateTime.now();
   final sink = f.diagnosticsFile == null
       ? null
@@ -242,6 +252,9 @@ Future<int> _runRollback(_Flags f) async {
     stderr.writeln('Error: --db <path> is required');
     return 2;
   }
+  if (f.migrationsFile != null) {
+    return _runMigrationWorker(f, 'rollback');
+  }
   final started = DateTime.now();
   final sink = f.diagnosticsFile == null
       ? null
@@ -262,6 +275,67 @@ Future<int> _runRollback(_Flags f) async {
   return 0;
 }
 
+Future<int> _runMigrationWorker(_Flags f, String operation) async {
+  final String migrationsPath = f.migrationsFile!;
+  final File migrationsFile = File(migrationsPath);
+  if (!migrationsFile.existsSync()) {
+    stderr.writeln('Error: migrations file "$migrationsPath" does not exist');
+    return 2;
+  }
+  final String source = migrationsFile.readAsStringSync();
+  if (!source.contains('migrations')) {
+    stderr.writeln(
+      'Error: migrations file must declare '
+      '`final List<MigrationBase> migrations`.',
+    );
+    return 2;
+  }
+  final String normalized = migrationsPath.replaceAll('\\', '/');
+  if (normalized.startsWith('/')) {
+    stderr.writeln(
+      'Error: --migrations must be a project-relative Dart file path.',
+    );
+    return 2;
+  }
+  final Directory workerDirectory = Directory('.d_rocket');
+  workerDirectory.createSync(recursive: true);
+  final String importPath = normalized.startsWith('./')
+      ? '../${normalized.substring(2)}'
+      : '../$normalized';
+  final File worker = File('${workerDirectory.path}/migration_worker.dart');
+  worker.writeAsStringSync(buildMigrationWorkerSource(importPath));
+  final List<String> workerArgs = <String>[
+    'run',
+    worker.path,
+    f.dbPath!,
+    operation,
+    if (f.target != null) '${f.target}',
+  ];
+  final ProcessResult result = await Process.run(
+    Platform.resolvedExecutable,
+    workerArgs,
+    runInShell: false,
+  );
+  stdout.write(result.stdout);
+  stderr.write(result.stderr);
+  final bool success = result.exitCode == 0;
+  if (f.diagnosticsFile != null) {
+    MigrationDiagnosticFile(f.diagnosticsFile!).record(
+      operation: 'cli.$operation',
+      startedAt: DateTime.now().toUtc(),
+      duration: Duration.zero,
+      success: success,
+      error: success ? null : result.stderr,
+      metadata: <String, Object?>{
+        'db': f.dbPath,
+        'migrations': migrationsPath,
+        if (f.target != null) 'target': f.target,
+      },
+    );
+  }
+  return result.exitCode;
+}
+
 Future<int> main(List<String> args) async {
   if (args.isEmpty || args[0] == '--help' || args[0] == '-h') {
     stdout.writeln(_kBanner);
@@ -271,14 +345,18 @@ Future<int> main(List<String> args) async {
       '  status   --db <path> [--diagnostics-file <path>]',
     );
     stdout.writeln(
-      '  run      --db <path> [--target N] [--diagnostics-file <path>]',
+      '  run      --db <path> [--target N] [--migrations <dart_file>] '
+      '[--diagnostics-file <path>]',
     );
     stdout.writeln(
-      '  rollback --db <path> [--diagnostics-file <path>]',
+      '  rollback --db <path> [--migrations <dart_file>] '
+      '[--diagnostics-file <path>]',
     );
     stdout.writeln('');
-    stdout.writeln('Scaffolder subcommands (`add` / `list` / `doctor`) live in');
-    stdout.writeln('`d_rocket:migration` (engine-agnostic, no dep on the engine).');
+    stdout
+        .writeln('Scaffolder subcommands (`add` / `list` / `doctor`) live in');
+    stdout.writeln(
+        '`d_rocket:migration` (engine-agnostic, no dep on the engine).');
     return 0;
   }
 

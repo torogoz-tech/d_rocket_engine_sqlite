@@ -16,6 +16,10 @@ version number.
   row counts, null-value coverage and captured database errors.
 * NDJSON diagnostics output for `status`, `run` and `rollback` through
   `--diagnostics-file`.
+* `--migrations <dart_file>` support for loading application
+  `List<MigrationBase> migrations` in a temporary project worker. `run` and
+  `rollback` now execute real transactional migration code instead of only
+  printing an MVP warning.
 
 The CLI remains a separate process from an attached Flutter VM Service. Import
 the generated NDJSON into the d_rocket DevTools extension when inspection in
