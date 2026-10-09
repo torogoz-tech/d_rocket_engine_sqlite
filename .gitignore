@@ -3,6 +3,7 @@
 .pub/
 build/
 pubspec.lock
+.d_rocket/
 .idea/
 .vscode/
 *.iml
