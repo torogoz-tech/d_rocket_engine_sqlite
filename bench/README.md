@@ -1,4 +1,4 @@
-# d_rocket 2.0.0 — Benchmark suite
+# d_rocket 2.1.0 — Benchmark suite
 
 Standalone benchmark scripts for the d_rocket ecosystem.
 Not part of the test suite (the CI does not run these by
@@ -48,14 +48,28 @@ optional `--output` path):
    raw `INSERT` per row (within a single transaction).
 3. **Engine overhead** (planned) — SQLite in-memory vs file-based.
 
-## What's NOT in 2.0.0 (planned for 2.1.0)
+## `sync_bench.dart` — sync throughput and idempotent retry
+
+Measures a large in-memory sync envelope and a retry with the same
+`changeId` keys. The second run must not increase the server watermark.
+
+```bash
+dart run bench/sync_bench.dart --changes 5000
+```
+
+The benchmark is intentionally a deterministic provider benchmark; production
+network latency must be measured separately against the application's backend.
+
+## Not covered by the default benchmark
 
 * **Cross-engine comparison** — SQLite vs Postgres vs libsql_wasm.
   This requires running the bench in three different
   processes; we'll use a small `compare_engines.dart`
   script that runs all three and diffs the output.
-* **Realtime / WebSocket roundtrip.**
-* **Sync / REST throughput.**
+* **Cross-engine comparison** — run engine-specific processes separately.
+* **Realtime / WebSocket roundtrip** — requires a live server and is an
+  integration benchmark, not a deterministic local benchmark.
+* **REST throughput** — measure with the application's deployment topology.
 
 ## Methodology
 
@@ -65,8 +79,8 @@ optional `--output` path):
   median (50th percentile) and p95 (95th percentile).
 * **One fresh DB per benchmark** (the previous benchmark's
   data could pollute the next one).
-* **Single-threaded** — the bench doesn't exercise
-  concurrency. The Postgres engine has a connection
+* **Single-threaded** — the SQLite benchmark doesn't exercise
+  multi-isolate concurrency. The Postgres engine has a connection
   pool; cross-engine benchmarks should test with
   `minConnections: 1, maxConnections: 32` to model
   production.
