@@ -43,23 +43,32 @@ class _Flags {
   _Flags({
     this.dbPath,
     this.target,
+    this.diagnosticsFile,
   });
 
   final String? dbPath;
   final int? target;
+  final String? diagnosticsFile;
 
   static _Flags parse(List<String> args) {
     String? db;
     int? target;
+    String? diagnosticsFile;
     for (var i = 0; i < args.length; i++) {
       final arg = args[i];
       if (arg == '--db' && i + 1 < args.length) {
         db = args[++i];
       } else if (arg == '--target' && i + 1 < args.length) {
         target = int.tryParse(args[++i]);
+      } else if (arg == '--diagnostics-file' && i + 1 < args.length) {
+        diagnosticsFile = args[++i];
       }
     }
-    return _Flags(dbPath: db, target: target);
+    return _Flags(
+      dbPath: db,
+      target: target,
+      diagnosticsFile: diagnosticsFile,
+    );
   }
 }
 
@@ -126,6 +135,10 @@ Future<int> _runStatus(_Flags f) async {
     stderr.writeln('Error: --db <path> is required');
     return 2;
   }
+  final started = DateTime.now();
+  final sink = f.diagnosticsFile == null
+      ? null
+      : MigrationDiagnosticFile(f.diagnosticsFile!);
   final runner = _RawSqliteRunner(f.dbPath!);
   try {
     final v = await runner.currentVersion();
@@ -148,7 +161,24 @@ Future<int> _runStatus(_Flags f) async {
         );
       }
     }
+    sink?.record(
+      operation: 'cli.status',
+      startedAt: started,
+      duration: DateTime.now().difference(started),
+      success: true,
+      metadata: <String, Object?>{'db': f.dbPath},
+    );
     return 0;
+  } catch (error) {
+    sink?.record(
+      operation: 'cli.status',
+      startedAt: started,
+      duration: DateTime.now().difference(started),
+      success: false,
+      error: error,
+      metadata: <String, Object?>{'db': f.dbPath},
+    );
+    rethrow;
   } finally {
     await runner.close();
   }
@@ -159,10 +189,21 @@ Future<int> _runMigrate(_Flags f) async {
     stderr.writeln('Error: --db <path> is required');
     return 2;
   }
+  final started = DateTime.now();
+  final sink = f.diagnosticsFile == null
+      ? null
+      : MigrationDiagnosticFile(f.diagnosticsFile!);
   final runner = _RawSqliteRunner(f.dbPath!);
   try {
     if (f.target != null) {
       final code = await runner.upgradeTo(f.target!);
+      sink?.record(
+        operation: 'cli.run',
+        startedAt: started,
+        duration: DateTime.now().difference(started),
+        success: code == 0,
+        metadata: <String, Object?>{'db': f.dbPath, 'target': f.target},
+      );
       return code;
     }
     // No target: just print the current state.
@@ -173,7 +214,24 @@ Future<int> _runMigrate(_Flags f) async {
       '`Db.open(strategy: MigrationStrategy(...))`. '
       'See the README for the full pattern.',
     );
+    sink?.record(
+      operation: 'cli.run',
+      startedAt: started,
+      duration: DateTime.now().difference(started),
+      success: true,
+      metadata: <String, Object?>{'db': f.dbPath, 'target': f.target},
+    );
     return 0;
+  } catch (error) {
+    sink?.record(
+      operation: 'cli.run',
+      startedAt: started,
+      duration: DateTime.now().difference(started),
+      success: false,
+      error: error,
+      metadata: <String, Object?>{'db': f.dbPath, 'target': f.target},
+    );
+    rethrow;
   } finally {
     await runner.close();
   }
@@ -184,11 +242,22 @@ Future<int> _runRollback(_Flags f) async {
     stderr.writeln('Error: --db <path> is required');
     return 2;
   }
+  final started = DateTime.now();
+  final sink = f.diagnosticsFile == null
+      ? null
+      : MigrationDiagnosticFile(f.diagnosticsFile!);
   stderr.writeln(
     '⚠️  `rollback` requires the migration classes on hand to '
     'call `MigrationBase.down()`. Use '
     '`Db.open(strategy: ...)` programmatically, or '
     '`run --db <path> --target N` to downgrade to vN.',
+  );
+  sink?.record(
+    operation: 'cli.rollback',
+    startedAt: started,
+    duration: DateTime.now().difference(started),
+    success: false,
+    metadata: <String, Object?>{'db': f.dbPath},
   );
   return 0;
 }
@@ -198,9 +267,15 @@ Future<int> main(List<String> args) async {
     stdout.writeln(_kBanner);
     stdout.writeln('');
     stdout.writeln('Usage:');
-    stdout.writeln('  status   --db <path>             # print current schema version');
-    stdout.writeln('  run      --db <path> [--target N]  # apply / migrate to vN');
-    stdout.writeln('  rollback --db <path>             # roll back the most recent');
+    stdout.writeln(
+      '  status   --db <path> [--diagnostics-file <path>]',
+    );
+    stdout.writeln(
+      '  run      --db <path> [--target N] [--diagnostics-file <path>]',
+    );
+    stdout.writeln(
+      '  rollback --db <path> [--diagnostics-file <path>]',
+    );
     stdout.writeln('');
     stdout.writeln('Scaffolder subcommands (`add` / `list` / `doctor`) live in');
     stdout.writeln('`d_rocket:migration` (engine-agnostic, no dep on the engine).');

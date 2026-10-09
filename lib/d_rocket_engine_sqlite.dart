@@ -68,6 +68,7 @@ export 'src/db_set_extension.dart';
 // SQLite engine.
 export 'src/sql/encryption_config.dart';
 export 'src/sql/encryption_status.dart';
+export 'src/cli/migration_diagnostic_file.dart';
 //: `sql/fragment.dart` was the old location
 // of `SqlFragment`; in 2.0.0 the class lives in
 // d_rocket core (`src/linq/sql/sql_fragment.dart`)
